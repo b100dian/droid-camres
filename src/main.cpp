@@ -88,10 +88,15 @@ int main(int argc, char *argv[])
 
     for (i=0 ; i<cameras.size() ; i++)
     {
+        gint direction = 0; // back sensor
         qInfo("Searching resolutions for %s...", qPrintable(cameras.at(i).first));
-        QList<QPair<QString, QStringList> > res = cr.getResolutions(cameras.at(i).second, caps);
+        QList<QPair<QString, QStringList> > res = cr.getResolutions(cameras.at(i).second, caps, direction);
 
         resolutions.append(res);
+
+        QString renamed = (direction == 1 ? "sec" : "pri") + cameras.at(i).first.mid(3);
+        qInfo("Renaming %s to %s...", qPrintable(cameras.at(i).first), qPrintable(renamed));
+        cameras.replace(i, qMakePair<QString, int>(renamed, i));
     }
 
     OutputGen og;

@@ -37,23 +37,31 @@ QList<QPair<QString, int> > Camres::getCameras()
         return res;
     }
 
-    if (!G_IS_PARAM_SPEC_ENUM(spec))
+    if (G_IS_PARAM_SPEC_ENUM(spec))
     {
-        qCritical("Camres error: Property camera-device is not an enum.");
-        gst_object_unref(elem);
-        return res;
-    }
+        GParamSpecEnum *e = G_PARAM_SPEC_ENUM(spec);
 
-    GParamSpecEnum *e = G_PARAM_SPEC_ENUM(spec);
+        res << qMakePair<QString, int>(e->enum_class->values[e->default_value].value_name, (int)e->default_value);
 
-    res << qMakePair<QString, int>(e->enum_class->values[e->default_value].value_name, (int)e->default_value);
-
-    for (int x = e->enum_class->minimum; x <= e->enum_class->maximum; x++)
-    {
-        if (x != e->default_value)
+        for (int x = e->enum_class->minimum; x <= e->enum_class->maximum; x++)
         {
-            res << qMakePair<QString, int>(e->enum_class->values[x].value_name, x);
+            if (x != e->default_value)
+            {
+                res << qMakePair<QString, int>(e->enum_class->values[x].value_name, x);
+            }
         }
+    }
+    else if (G_IS_PARAM_SPEC_INT(spec))
+    {
+        GParamSpecInt *n = G_PARAM_SPEC_INT(spec);
+
+        for (int x = n->minimum; x <= n->maximum; x++)
+        {
+            res << qMakePair<QString, int>(QString("cam%1").arg(x), x);
+        }
+
+    } else {
+        qCritical("Camres error: Property camera-device is not an enum, nor an int a %s.", G_PARAM_SPEC_TYPE_NAME(spec));
     }
 
     gst_object_unref(elem);
@@ -62,7 +70,7 @@ QList<QPair<QString, int> > Camres::getCameras()
 }
 
 
-QList<QPair<QString, QStringList> > Camres::getResolutions(int cam, QStringList whichCaps)
+QList<QPair<QString, QStringList> > Camres::getResolutions(int cam, QStringList whichCaps, gint& direction)
 {
     QList<QPair<QString, QStringList> > res;
 
@@ -134,6 +142,8 @@ QList<QPair<QString, QStringList> > Camres::getResolutions(int cam, QStringList 
         gst_object_unref(cameraBin);
         return res;
     }
+
+    g_object_get(cameraBin, "sensor-direction", &direction, NULL);
 
     GstCaps *caps = NULL;
 
